@@ -4,7 +4,7 @@
 <!-- ───────────────────────────────────────────── -->
 
 <p align="center">
-  <img src="https://your-logo-link-here.png" width="140" alt="Tech Brian Logo"/>
+  <img src="https://files.catbox.moe/b2xl1t.jpg" width="140" alt="Tech Brian Logo"/>
 </p>
 
 <h1 align="center">
