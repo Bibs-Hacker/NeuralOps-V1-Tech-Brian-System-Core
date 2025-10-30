@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Neural Interface Diagnostics Panel</title>
+    <style>
+        /* --- GLOBAL STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        
+        :root {
+            --color-primary: #00FF00; /* Bright Green */
+            --color-secondary: #FFFF00; /* Bright Yellow */
+            --color-background: #000000;
+            --color-text-dim: #004400;
+            --font-family: 'Orbitron', sans-serif;
+            --glow-primary: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary);
+            --glow-secondary: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+            --color-error: #FF4500; /* Orange-Red for errors */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--color-background);
+            font-family: var(--font-family);
+            color: var(--color-primary);
+        }
+
+        /* --- SPLASH SCREEN STYLES --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 1s ease-in-out;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .tech-logo {
+            font-size: 6rem;
+            color: var(--color-primary);
+            text-shadow: var(--glow-primary);
+            animation: pulse 1.5s infinite alternate;
+            margin-bottom: 10px;
+        }
+
+        .splash-text {
+            font-size: 1.5rem;
+            color: var(--color-secondary);
+            text-shadow: var(--glow-secondary);
+            animation: flicker 0.1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { text-shadow: var(--glow-primary); }
+            to { text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary); }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* --- LOGIN SCREEN STYLES --- */
+        #login-screen {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            flex-direction: column;
+        }
+
+        .login-box {
+            padding: 40px;
+            border: 2px solid var(--color-secondary);
+            box-shadow: 0 0 20px var(--color-secondary);
+            background-color: rgba(0, 255, 0, 0.05);
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: var(--color-secondary);
+            text-shadow: var(--glow-secondary);
+            margin-bottom: 20px;
+        }
+
+        .login-box input {
+            display: block;
+            width: 300px;
+            padding: 10px;
+            margin: 15px auto;
+            background: transparent;
+            border: 1px solid var(--color-primary);
+            color: var(--color-primary);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            text-align: center;
+            box-shadow: var(--glow-primary);
+            outline: none;
+        }
+
+        .login-box button {
+            background-color: var(--color-primary);
+            color: var(--color-background);
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            text-shadow: none;
+            box-shadow: var(--glow-primary);
+            transition: background-color 0.3s;
+        }
+
+        .login-box button:hover {
+            background-color: var(--color-secondary);
+            color: var(--color-background);
+            box-shadow: var(--glow-secondary);
+        }
+
+        .login-error {
+            color: var(--color-error);
+            text-shadow: 0 0 5px var(--color-error);
+            margin-top: 10px;
+        }
+
+        /* --- MAIN SYSTEM STYLES --- */
+        #main-system {
+            display: none;
+            height: 100%;
+            width: 100%;
+            padding: 20px;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+        }
+
+        /* HEADER */
+        header {
+            grid-column: 1 / 4;
+            text-align: center;
+            border-bottom: 1px solid var(--color-text-dim);
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-shadow: var(--glow-primary);
+            margin-bottom: 5px;
+            color: var(--color-primary);
+        }
+
+        .header-info {
+            font-size: 0.8rem;
+            color: var(--color-secondary);
+            text-shadow: var(--glow-secondary);
+        }
+
+        /* MODULE BASE STYLE */
+        .module {
+            background-color: rgba(0, 255, 0, 0.05);
+            padding: 15px;
+            border: 1px solid var(--color-primary);
+            box-shadow: var(--glow-primary);
+            border-radius: 5px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .module-title {
+            font-size: 1.2rem;
+            color: var(--color-secondary);
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--color-secondary);
+            padding-bottom: 5px;
+            text-shadow: var(--glow-secondary);
+        }
+
+        /* LEFT COLUMN & CLI */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        #readout {
+            flex-grow: 1;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-secondary);
+            padding: 5px;
+            min-height: 100px; 
+            max-height: 200px;
+        }
+        
+        .command-module {
+            margin-top: 10px;
+            flex-grow: 1;
+        }
+
+        .command-input-line {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .prompt {
+            color: var(--color-secondary);
+            margin-right: 5px;
+        }
+
+        #command-input {
+            background: transparent;
+            border: none;
+            color: var(--color-primary);
+            outline: none;
+            width: 100%;
+            caret-color: var(--color-primary);
+            font-family: var(--font-family);
+        }
+
+        .progress-bar-container {
+            height: 20px;
+            background-color: var(--color-text-dim);
+            border: 1px solid var(--color-primary);
+            margin-top: 5px;
+        }
+
+        #processing-load-bar {
+            height: 100%;
+            width: 75%;
+            background-color: var(--color-primary);
+            box-shadow: var(--glow-primary);
+            transition: width 0.5s ease-out;
+        }
+
+        .load-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--color-secondary);
+        }
+
+        /* CENTER VISUALIZER */
+        #neural-visualizer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /* Animated Signals */
+        #animated-signals {
+            height: 100px;
+            width: 90%;
+            overflow: hidden;
+            border: 1px solid var(--color-secondary);
+            margin-bottom: 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .signal-line {
+            height: 50%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: signal-move 1.5s linear infinite;
+        }
+        
+        .signal-line:nth-child(2) {
+            background: linear-gradient(90deg, transparent 0%, var(--color-secondary) 50%, transparent 100%);
+            animation: signal-move 2s linear infinite reverse;
+        }
+
+        @keyframes signal-move {
+            0% { background-position: 0% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .ai-status {
+            font-size: 2.5rem;
+            text-shadow: var(--glow-primary);
+            color: var(--color-primary);
+            margin-top: 10px;
+            animation: glow-pulse 2s infinite alternate;
+        }
+
+        @keyframes glow-pulse {
+            from { text-shadow: var(--glow-primary); }
+            to { text-shadow: 0 0 15px var(--color-primary), 0 0 30px var(--color-primary); }
+        }
+
+        /* RIGHT COLUMN */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Inbox Button */
+        #inbox-btn {
+            background: var(--color-primary);
+            color: var(--color-background);
+            border: 1px solid var(--color-primary);
+            box-shadow: var(--glow-primary);
+            padding: 8px 15px;
+            margin-top: 5px;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        #inbox-btn:hover {
+            background: var(--color-secondary);
+            box-shadow: var(--glow-secondary);
+            color: var(--color-background);
+        }
+
+
+        /* --- FOOTER STYLES --- */
+        footer {
+            grid-column: 1 / 4;
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            border-top: 1px solid var(--color-text-dim);
+            padding-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        #manager-btn {
+            background: var(--color-secondary);
+            color: var(--color-background);
+            border: 1px solid var(--color-secondary);
+            box-shadow: var(--glow-secondary);
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        #manager-btn:hover {
+            background: var(--color-primary);
+            box-shadow: var(--glow-primary);
+            color: var(--color-background);
+        }
+
+        /* --- FULL SCREEN OVERLAYS (MANAGER & INBOX) --- */
+        #contact-screen, #message-viewer-screen {
+            display: none; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .overlay-box {
+            padding: 50px;
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 0 30px var(--color-primary);
+            background-color: rgba(0, 255, 0, 0.08);
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .overlay-box h2 {
+            color: var(--color-primary);
+            text-shadow: var(--glow-primary);
+            margin-bottom: 30px;
+        }
+
+        /* Message Viewer Specific Styles */
+        #inbound-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            font-size: 1rem;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--color-secondary);
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .message-line {
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dotted var(--color-text-dim);
+            color: var(--color-secondary);
+        }
+
+        .message-sender {
+            color: var(--color-primary);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .message-new {
+            animation: highlight-new 1s 3 alternate;
+            background-color: rgba(255, 255, 0, 0.1);
+        }
+        
+        @keyframes highlight-new {
+            from { background-color: rgba(255, 255, 0, 0.2); }
+            to { background-color: rgba(255, 255, 0, 0.1); }
+        }
+        
+        /* Back Button Style (Used on both overlays) */
+        .back-to-system-btn {
+            margin-top: 10px;
+            background-color: var(--color-secondary);
+            color: var(--color-background);
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: var(--font-family);
+            font-size: 1rem;
+            box-shadow: var(--glow-secondary);
+            transition: all 0.3s;
+        }
+        
+        .back-to-system-btn:hover {
+            background-color: var(--color-primary);
+            box-shadow: var(--glow-primary);
+        }
+
+        /* UTILITY CLASSES */
+        .flex-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .glow {
+            color: var(--color-primary);
+            text-shadow: var(--glow-primary);
+        }
+        
+        .error {
+            color: var(--color-error);
+            text-shadow: 0 0 5px var(--color-error);
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="ambient-sound" loop preload="auto" style="display: none;"></audio>
+    <audio id="message-sound" preload="auto" style="display: none;"></audio>
+
+
+    <div id="splash-screen">
+        <div class="tech-logo">
+            &#9672;
+        </div>
+        <div class="splash-text">
+            NEURAL INTERFACE: AEGIS-7 BOOT SEQUENCE
+        </div>
+        <div class="splash-text" style="margin-top: 20px; font-size: 1rem; color: var(--color-primary);">
+            Optimized for Tech Brian & Tech Merab
+        </div>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>SYSTEM ACCESS REQUIRED</h2>
+            <input type="text" id="username-input" placeholder="USERNAME" required>
+            <input type="password" id="password-input" placeholder="PASSWORD" required>
+            <button id="login-btn">AUTHORIZE</button>
+            <div id="login-error" class="login-error"></div>
+        </div>
+    </div>
+    
+    <div id="contact-screen">
+        <div class="overlay-box">
+            <h2>MANAGEMENT INTERFACE ACCESS</h2>
+            <p>
+                <span class="glow">Watsapp Team:</span> <a href="tel:+254748950572" target="_blank" title="Call Team">+254748950572</a>
+            </p>
+            <p>
+                <span class="glow">Mailto:</span> <a href="mailto:bridah888@gmail.com" target="_blank">bridah888@gmail.com</a>
+            </p>
+            <p>
+                <span class="glow">Contact Team:</span> <a href="tel:+254748950572" target="_blank" title="Call Team">0748950572</a>
+            </p>
+            <button id="manager-back-btn" class="back-to-system-btn">RETURN TO SYSTEM</button>
+        </div>
+    </div>
+    
+    <div id="message-viewer-screen">
+        <div class="overlay-box">
+            <h2>INBOUND COMMUNICATION LOG</h2>
+            <div id="inbound-messages">
+                </div>
+            <button id="inbox-back-btn" class="back-to-system-btn">BACK TO SYSTEM</button>
+        </div>
+    </div>
+
+
+    <div id="main-system">
+        <header>
+            <h1>🤖 NEURAL INTERFACE DIAGNOSTICS PANEL By Tech Brian👻</h1>
+            <div class="header-info">
+                AUGMENTED INTELLIGENCE UNIT: AEGIS-7 | STATUS: <span class="glow">ONLINE/OPTIMAL</span>
+            </div>
+        </header>
+
+        <div class="left-col">
+            <div class="module">
+                <div class="module-title">SYSTEM LOAD & PERFORMANCE</div>
+                <div class="load-text">
+                    <span>Processing Load:</span>
+                    <span id="load-percentage">75%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="processing-load-bar"></div>
+                </div>
+                <div class="load-text" style="margin-top: 10px;">
+                    <span>Memory Allocation (GB):</span>
+                    <span id="memory-usage">32.4 / 64.0</span>
+                </div>
+                <div class="load-text" style="margin-top: 5px;">
+                    <span>Core Temperature (°C):</span>
+                    <span id="temperature">45.2°C (GREEN)</span>
+                </div>
+            </div>
+
+            <div class="module command-module" style="flex-grow: 1;">
+                <div class="module-title">DIAGNOSTIC READOUT & CLI</div>
+                <div id="readout">
+                    > Initializing neural channels... [OK]<br>
+                    > Core AI signature verified... [SECURE]<br>
+                    > Type 'help' for available commands.
+                </div>
+                <div class="command-input-line">
+                    <span class="prompt" id="cli-prompt">AEGIS-7 ></span>
+                    <input type="text" id="command-input" placeholder="Enter command..." autofocus>
+                </div>
+            </div>
+        </div>
+
+        <div id="neural-visualizer" class="module">
+            <div class="module-title" style="margin-bottom: 0;">NETWORK ACTIVITY & SIGNALS</div>
+            
+            <div id="animated-signals">
+                <div class="signal-line"></div>
+                <div class="signal-line"></div>
+            </div>
+            
+            <canvas id="visualizer-canvas" style="flex-grow: 1;"></canvas>
+            <div class="ai-status">AI HEALTH: OPTIMAL</div>
+        </div>
+
+        <div class="right-col">
+            <div class="module">
+                <div class="module-title">UNIT STABILITY MATRIX</div>
+                <div class="stability-ring">
+                    STABLE
+                </div>
+                <div class="status-container">
+                    <div class="status-light"></div>
+                    <span>AXIAL DRIFT: 0.00%</span>
+                </div>
+                <div class="status-container">
+                    <div class="status-light" style="background-color: var(--color-secondary); box-shadow: var(--glow-secondary);"></div>
+                    <span style="color: var(--color-secondary);">MEDIAL FEEDBACK: 99.8%</span>
+                </div>
+            </div>
+            
+            <div class="module" style="min-height: 150px;">
+                <div class="module-title">INBOUND COMMUNICATIONS</div>
+                <button id="inbox-btn">VIEW INBOX (0 NEW)</button>
+                <div style="font-size: 0.8rem; margin-top: 10px; color: var(--color-text-dim);">
+                    Messages from external stations.
+                </div>
+            </div>
+            
+            <div class="module">
+                <div class="module-title">OPTIMIZATION PROTOCOLS</div>
+                <div class="flex-row" style="margin-bottom: 5px;">
+                    <span>Auto-Tune:</span> <span class="glow">Enabled</span>
+                </div>
+                <div class="flex-row">
+                    <span>Latency (ms):</span> <span id="latency">3.5 ms</span>
+                </div>
+                <div class="flex-row">
+                    <span>Throughput (GB/s):</span> <span id="throughput">12.1 GB/s</span>
+                </div>
+                <div style="font-size: 0.8rem; margin-top: 10px; color: var(--color-text-dim);">
+                    Last Sync: <span id="last-sync">--</span>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <span>
+                SYSTEM V1.0 - NEURAL DIAGNOSTICS & OPTIMIZATION SUITE | UNDER MANAGEMENT BY: <span class="glow">TECH BRIAN</span> AND <span class="glow">TECH MERAB</span>.
+            </span>
+            <button id="manager-btn">MANAGER CONTACT</button>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const splashScreen = document.getElementById('splash-screen');
+            const loginScreen = document.getElementById('login-screen');
+            const mainSystem = document.getElementById('main-system');
+            
+            // Overlays
+            const contactScreen = document.getElementById('contact-screen');
+            const messageViewerScreen = document.getElementById('message-viewer-screen');
+
+            // Elements
+            const readout = document.getElementById('readout');
+            const commandInput = document.getElementById('command-input');
+            const loginBtn = document.getElementById('login-btn');
+            const usernameInput = document.getElementById('username-input');
+            const passwordInput = document.getElementById('password-input');
+            const loginError = document.getElementById('login-error');
+            const managerBtn = document.getElementById('manager-btn');
+            const managerBackBtn = document.getElementById('manager-back-btn');
+            const inboxBtn = document.getElementById('inbox-btn'); 
+            const inboxBackBtn = document.getElementById('inbox-back-btn');
+            const inboundMessages = document.getElementById('inbound-messages');
+            const cliPrompt = document.getElementById('cli-prompt');
+
+            // --- AUDIO SETUP ---
+            const ambientSound = document.createElement('audio');
+            ambientSound.loop = true;
+            ambientSound.volume = 0.5;
+
+            const messageSound = document.createElement('audio');
+            messageSound.volume = 0.8;
+
+            const playAmbient = () => {
+                if (ambientSound.src) {
+                    ambientSound.play().catch(e => console.log("Ambient play failed (user interaction required):", e));
+                }
+            };
+            
+            const playMessageSound = () => {
+                if (messageSound.src) {
+                    messageSound.play().catch(e => console.log("Message sound play failed:", e));
+                }
+            };
+
+
+            // --- SPLASH SCREEN & LOGIN LOGIC ---
+            setTimeout(() => {
+                splashScreen.classList.add('fade-out');
+            }, 3000);
+
+            splashScreen.addEventListener('transitionend', () => {
+                if (splashScreen.classList.contains('fade-out')) {
+                    splashScreen.style.display = 'none';
+                    loginScreen.style.display = 'flex';
+                    usernameInput.focus();
+                }
+            });
+
+            const correctPassword = '#TechMera-Br@123';
+            let currentUsername = 'AEGIS-7';
+
+            const attemptLogin = () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+                loginError.textContent = '';
+
+                if (!username) {
+                    loginError.textContent = 'ERROR: Username field is required.';
+                    return;
+                }
+                
+                if (password !== correctPassword) {
+                    loginError.textContent = 'ERROR: Authorization failed. Incorrect password.';
+                    passwordInput.value = '';
+                    return;
+                }
+
+                currentUsername = username.toUpperCase().replace(/[^A-Z0-9-]/g, ''); 
+                cliPrompt.textContent = `${currentUsername} >`; 
+                
+                loginScreen.style.display = 'none';
+                mainSystem.style.display = 'grid';
+                animateVisualizer();
+                commandInput.focus();
+                playAmbient();
+            };
+
+            loginBtn.addEventListener('click', attemptLogin);
+            passwordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') attemptLogin();
+            });
+
+            // --- MESSAGE & INBOX LOGIC ---
+            let messageId = 0;
+            const messages = [
+                { id: messageId++, sender: "STATION 3", content: "System check requested. [ACK]", read: false },
+            ];
+            
+            const updateInboxButton = () => {
+                const unreadCount = messages.filter(m => !m.read).length;
+                inboxBtn.textContent = `VIEW INBOX (${unreadCount} ${unreadCount === 1 ? 'NEW' : 'NEW'})`;
+                if (unreadCount > 0) {
+                    inboxBtn.classList.add('glow');
+                } else {
+                    inboxBtn.classList.remove('glow');
+                }
+            };
+
+            const addNewMessage = (sender, content) => {
+                messageId++;
+                messages.push({ id: messageId, sender: sender, content: content, read: false });
+                playMessageSound();
+                updateInboxButton();
+            };
+
+            const displayInboxMessages = () => {
+                inboundMessages.innerHTML = ''; // Clear current display
+                messages.forEach(msg => {
+                    const newLine = document.createElement('div');
+                    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    newLine.classList.add('message-line');
+                    if (!msg.read) {
+                        newLine.classList.add('message-new');
+                        msg.read = true; // Mark as read when displayed
+                    }
+                    newLine.innerHTML = `<span class="prompt">[${timestamp}]</span><span class="message-sender">${msg.sender}:</span> ${msg.content}`;
+                    inboundMessages.appendChild(newLine);
+                });
+                inboundMessages.scrollTop = inboundMessages.scrollHeight;
+                updateInboxButton();
+            };
+
+            const openMessageViewer = () => {
+                mainSystem.style.display = 'none';
+                contactScreen.style.display = 'none';
+                messageViewerScreen.style.display = 'flex';
+                displayInboxMessages();
+            };
+            
+            const closeViewer = (viewer) => {
+                viewer.style.display = 'none';
+                mainSystem.style.display = 'grid';
+                commandInput.focus();
+            }
+
+            inboxBtn.addEventListener('click', openMessageViewer);
+            inboxBackBtn.addEventListener('click', () => closeViewer(messageViewerScreen));
+            updateInboxButton();
+
+
+            // --- MANAGER CONTACT LOGIC ---
+            const openManagerContact = () => {
+                mainSystem.style.display = 'none';
+                messageViewerScreen.style.display = 'none';
+                contactScreen.style.display = 'flex';
+            };
+            
+            managerBtn.addEventListener('click', openManagerContact);
+            managerBackBtn.addEventListener('click', () => closeViewer(contactScreen));
+
+            // --- CLI LOGIC ---
+            const logCommand = (text, className = '') => {
+                const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                readout.innerHTML += `<br><span class="prompt">[${timestamp}] </span><span class="${className}">${text}</span>`;
+                readout.scrollTop = readout.scrollHeight;
+            };
+
+            const commands = {
+                'help': "Available commands: <span class='glow'>'status'</span>, <span class='glow'>'optimize'</span>, <span class='glow'>'reboot'</span>, <span class='glow'>'ping'</span>, <span class='glow'>'clear'</span>, <span class='glow'>'inbox'</span> (opens viewer), <span class='glow'>'manager'</span>, <span class='glow'>'transmit &lt;msg&gt;'</span>.",
+                'status': () => {
+                    const load = document.getElementById('load-percentage').textContent;
+                    const temp = document.getElementById('temperature').textContent;
+                    return `AEGIS-7 Status: <span class='glow'>Optimal</span>. Load: ${load}. Temp: ${temp}. Stability Matrix: <span class='glow'>Locked</span>.`;
+                },
+                'optimize': () => {
+                    logCommand('// Running optimization algorithms...', 'glow');
+                    setTimeout(() => logCommand('Optimization complete. Efficiency gain: +1.2%. Core functions nominal.', 'glow'), 1500);
+                    return '';
+                },
+                'reboot': () => {
+                    logCommand('// Initiating system shutdown sequence...', 'error');
+                    logCommand('// Standby for simulated restart...', 'error');
+                    setTimeout(() => { window.location.reload(); }, 3000);
+                    return '';
+                },
+                'ping': () => {
+                    const latencyVal = (Math.random() * (5 - 1) + 1).toFixed(1);
+                    return `Ping AEGIS-7: Latency ${latencyVal} ms. Packet loss 0%.`;
+                },
+                'clear': () => {
+                    readout.innerHTML = '> Console cleared.';
+                    return '';
+                },
+                'inbox': () => {
+                    logCommand('// Opening Inbound Communications Viewer...');
+                    setTimeout(openMessageViewer, 300);
+                    return '';
+                },
+                'manager': () => {
+                    logCommand('// Accessing Management Interface...');
+                    setTimeout(openManagerContact, 300);
+                    return '';
+                }
+            };
+
+            commandInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const fullCommand = commandInput.value.trim();
+                    commandInput.value = '';
+                    const parts = fullCommand.toLowerCase().split(' ');
+                    const command = parts[0];
+                    const args = parts.slice(1).join(' ');
+
+                    logCommand(`${currentUsername} > ${fullCommand}`);
+                    
+                    if (command === 'transmit') {
+                        if (args.length < 5) {
+                            logCommand(`Error: Transmission failed. Message too short.`, 'error');
+                            return;
+                        }
+                        logCommand(`// Transmitting data packet: "${args}" ...`, 'glow');
+                        setTimeout(() => {
+                            logCommand(`Transmission successful. Target: OUTER-RELAY. Confirmation: [OK]`);
+                        }, 1000);
+                    } else if (commands[command]) {
+                        const response = typeof commands[command] === 'function' ? commands[command]() : commands[command];
+                        if (response) {
+                            logCommand(response);
+                        }
+                    } else if (command !== '') {
+                        logCommand(`Error: Unknown command '${command}'. Type '<span class="glow">help</span>'.`, 'error');
+                    }
+                    e.preventDefault();
+                }
+            });
+
+            // Simulate incoming communications
+            const simulatedMessages = [
+                { sender: "OUTER-RELAY", content: "Anomaly detected in Sector Beta-9. Investigate." },
+                { sender: "TECH BRIAN", content: "Need a full diagnostic report by 0800 hours. Confirm receipt." },
+                { sender: "STATION 8", content: "Power fluctuation reported. Initiating minimal load protocol." },
+                { sender: "TECH MERAB", content: "The new heat-sink parameters are stable. Apply system-wide." }
+            ];
+            
+            setInterval(() => {
+                if (mainSystem.style.display === 'grid') {
+                    const randomIndex = Math.floor(Math.random() * simulatedMessages.length);
+                    const msg = simulatedMessages[randomIndex];
+                    addNewMessage(msg.sender, msg.content);
+                }
+            }, 10000); // New message every 10 seconds
+
+
+            // --- DATA ANIMATION LOGIC ---
+            const loadBar = document.getElementById('processing-load-bar');
+            const loadPct = document.getElementById('load-percentage');
+            const memoryUsage = document.getElementById('memory-usage');
+            const latency = document.getElementById('latency');
+            const throughput = document.getElementById('throughput');
+            const lastSync = document.getElementById('last-sync');
+            const temperature = document.getElementById('temperature');
+
+            function updateSystemData() {
+                // 1. Processing Load 
+                const newLoad = Math.floor(Math.random() * (95 - 60 + 1)) + 60;
+                loadBar.style.width = newLoad + '%';
+                loadPct.textContent = newLoad + '%';
+                
+                // 2. Memory
+                const usedMem = (Math.random() * (40 - 25) + 25).toFixed(1);
+                memoryUsage.textContent = `${usedMem} / 64.0`;
+
+                // 3. Temperature
+                const temp = (Math.random() * (48 - 40) + 40).toFixed(1);
+                temperature.textContent = `${temp}°C (GREEN)`;
+                
+                // 4. Latency & Throughput
+                latency.textContent = (Math.random() * (5 - 1) + 1).toFixed(1) + ' ms';
+                throughput.textContent = (Math.random() * (15 - 10) + 10).toFixed(1) + ' GB/s';
+
+                // 5. Last Sync Time
+                lastSync.textContent = new Date().toLocaleTimeString();
+            }
+
+            setInterval(updateSystemData, 1500);
+            updateSystemData(); // Initial call
+
+            // --- CANVAS VISUALIZER (Network Activity) ---
+            const canvas = document.getElementById('visualizer-canvas');
+            const ctx = canvas.getContext('2d');
+            let nodes = [];
+            const numNodes = 50;
+
+            function resizeCanvas() {
+                // Adjusted canvas height to account for the new signal block and button/text
+                canvas.width = canvas.parentElement.clientWidth - 30;
+                canvas.height = canvas.parentElement.clientHeight - 195; 
+                initNodes();
+            }
+
+            function initNodes() {
+                nodes = [];
+                for (let i = 0; i < numNodes; i++) {
+                    nodes.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        radius: Math.random() * 2 + 1,
+                        color: Math.random() > 0.5 ? 'var(--color-primary)' : 'var(--color-secondary)'
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < numNodes; i++) {
+                    const node = nodes[i];
+                    
+                    node.x += node.vx;
+                    node.y += node.vy;
+
+                    if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
+                    if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = node.color === 'var(--color-primary)' ? '#00FF00' : '#FFFF00';
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = 5;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    for (let j = i + 1; j < numNodes; j++) {
+                        const other = nodes[j];
+                        const dx = node.x - other.x;
+                        const dy = node.y - other.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(node.x, node.y);
+                            ctx.lineTo(other.x, other.y);
+                            ctx.strokeStyle = `rgba(0, 255, 0, ${1 - distance / 100})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(draw);
+            }
+
+            function animateVisualizer() {
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                draw();
+            }
+        });
+    </script>
+</body>
+  </html>
